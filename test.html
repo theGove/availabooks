@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <p>This is for  JS stuff testing</p>
+
+<!-- <!-- gn -->This is an example comment -->
+
+<button onclick="getCommentsFromHtml()">test</button>
+
+
+    <script>
+
+
+// Create a function to extract comments
+function getCommentsFromHtml(html) {
+    // Create a DOM parser
+    var parser = new DOMParser();
+    // Parse the provided HTML string into a document
+    var doc = parser.parseFromString(html, 'text/html');
+    // Get all the comment nodes
+    var comments = [];
+    var iterator = document.createNodeIterator(doc, NodeFilter.SHOW_COMMENT, null, false);
+    var node;
+    
+    // Iterate through all comment nodes and add them to the comments array
+    while (node = iterator.nextNode()) {
+        comments.push(node.nodeValue);
+    }
+    
+    return comments;
+}
+
+// Example usage:
+var htmlString = '<!-- This is an example comment --><div>Some content</div>';
+var comments = getCommentsFromHtml(htmlString);
+console.log(comments); // [" This is an example comment "]
+
+
+
+
+
+
+
+
+
+
+
+    </script>
+</body>
+</html>
