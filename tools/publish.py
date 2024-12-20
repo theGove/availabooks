@@ -3,18 +3,73 @@ import json
 import sys
 import os
 
-def getBlogInfo(blogName):
-  url = "https://" + blogName + ".blogspot.com/1970/01/bloginfo.html"
-  reply = requests.get(url)
-  print(reply.text)
-  JSON=reply.text.split("<pre>")[1].split("</pre>")[0]
-  data=json.loads(JSON)
-  data["blogName"]=blogName
-  data["blogId"] = reply.text.split("targetBlogID=")[1].split("&")[0]
-  return data
+bookInfo=""  # used to hold book info (hashes) if needed
+gasEndPoint = '' # this is used for contacting the google AppsScript blogger code 
+toolPath = '' # this is the path used for config.json
+bookInfoPostId = '' #this id the post id so we can update the hash when a book is updated
 
-def updateOnePost(post):
-  print(2)
+
+def getBlogInfo(blogName):
+  url = f"https://{blogName}.blogspot.com/feeds/posts/default?max-results=0"
+  reply = requests.get(url)
+  blogId=reply.text.split("blog-")[1].split("<")[0]
+  return {'blogId':blogId}
+
+def updateBookInfo():
+  global gasEndPoint
+  global bookInfoPostId
+  global bookInfo
+  url = f'https://{bookInfo['blogName']}.blogspot.com/{bookInfo['year']}/{bookInfo['month']}/bookinformation.html'
+  
+
+  reply = requests.get(url)
+  postId=reply.text.split("'postId': '")[1].split("'")[0]
+  fileContents = {"posts": bookInfo['posts']}
+  payload = {
+      'post': postId
+      ,'blog':getBlogInfo(bookInfo['blogName'])['blogId']
+      ,'content':'<pre>' + json.dumps(fileContents) +'</pre>'
+      , 'mode':'update-post'
+      ,'debug': 'true'
+      
+  }
+
+  reply = requests.post(gasEndPoint, json = payload)
+  response = json.loads(reply.text)
+
+  print("Hash Success: " , response['updated'])
+  
+
+
+def updateOnePost(blog, year, month, fileName, fileContents):
+  global bookInfo
+  global gasEndPoint
+  fileContentsHash = hash(fileContents)
+  fileKey = fileName.split('.')[0]
+
+
+  if bookInfo['names'][fileKey]['hash'] == fileContentsHash:
+    print(fileName + ' already up to date.')
+  else:
+    if gasEndPoint == '':
+      with open(os.path.join(toolPath, 'config.json')) as f:
+        config = json.load(f)
+      gasEndPoint = 'https://script.google.com/macros/s/'+config["deploymentId"]+'/exec'
+
+    payload = {
+        'post': bookInfo['names'][fileKey]['id']
+        ,'blog':getBlogInfo(blog)['blogId']
+        ,'content':fileContents
+        , 'mode':'update-post'
+        ,'debug': 'true'
+    }
+    reply = requests.post(gasEndPoint, json = payload)
+    response = json.loads(reply.text)
+
+    print("Success: " , response['updated'])
+    bookInfo['names'][fileKey]['hash'] = fileContentsHash
+    bookInfo['posts'][bookInfo['names'][fileKey]['id']]['hash'] = fileContentsHash
+    updateBookInfo()
 
 def publishOneFile(args):
   path = args.pop(0)
@@ -50,9 +105,19 @@ def getBookInfo(blog, year, month):
   url= f"https://{blog}.blogspot.com/{year}/{month}/bookinformation.html"
   reply = requests.get(url)
   jsonText=reply.text.split("<pre>")[1].split("</pre>")[0]
-  return json.loads(jsonText)
+  jsonObject = json.loads(jsonText)
+  jsonObject['names'] = {}
   
+  for key in jsonObject['posts']:
+    jsonObject['names'][jsonObject['posts'][key]['name']] = {
+      'hash':jsonObject['posts'][key]['hash'],
+      'id': key
+    }
 
+  jsonObject['year'] = year
+  jsonObject['month'] = month
+  jsonObject['blogName'] = blog
+  return jsonObject
 
 def isBookHome(path):
   # check to see path ends with a folder numbered 
@@ -88,19 +153,22 @@ def updateBlog(blog,year,month):
 def updatePost(blog, year, month, filename, file):
 
   print("updating:", blog, year, month, filename)
-       
+        
 def main(): 
   # If no params are passed, we will look to see if we are in a 
   # folder numbered 01-12 with a parent that is a four digit year greater 
   # than 1969 and less than 2100. If so, this is a full publication of 
   # a book 
+  global bookInfo
+  global toolPath
   args=sys.argv
   path=__file__.split(os.path.sep)
   path = os.path.sep.join(path[:-1])
   workingPath = os.getcwd()
+  toolPath = path
   filePath = os.path.join(path,"args.json")
   print("workingPath",workingPath)
-  print("filepath",filePath)
+  print("filePath",filePath)
 
   if workingPath.endswith("system"):
     ## hashes are not kept for system.  we just publish on command
@@ -111,7 +179,6 @@ def main():
     year = bookPath.pop()
     blog = bookPath.pop()
 
-    bookInfo=""  # used to hold book info (hashes) if needed
 
 
     if len(args) == 1:
@@ -135,7 +202,7 @@ def main():
           if os.path.exists(filePath):
             with open(filePath, "r") as file:
               fileContents = file.read()
-            updatePost(blog, year, month, fileName, fileContents)
+            updateOnePost(blog, year, month, fileName, fileContents)
           else:
             print(filePath, " does not exist.")  
 
@@ -152,11 +219,11 @@ def main():
 
   return
   if len(args)==1:
-    with open(filepath, "r") as file:
+    with open(filePath, "r") as file:
       args = json.loads(file.read())
       print(args)
   else:  
-    f = open(filepath, "w")
+    f = open(filePath, "w")
     f.write(json.dumps(args))
     f.close()
 
