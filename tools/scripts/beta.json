@@ -1,0 +1,21 @@
+{
+  "bookInfo": {
+    "posts": {
+      "5079601440379176114": {
+        "hash": -4022947455687027232,
+        "name": "chapter1"
+      },
+      "7856595822780092901": { "hash": 123456, "name": "chapter2" }
+    },
+    "names": {
+      "chapter1": { "hash": -4022947455687027232, "id": "5079601440379176114" },
+      "chapter2": { "hash": 123456, "id": "7856595822780092901" }
+    },
+    "year": "2000",
+    "month": "01",
+    "blogName": "book1002",
+    "bookInfoPostId": "1871658362482426965",
+    "systemPostId": ""
+  },
+  "args": ["chapter2.html"]
+}

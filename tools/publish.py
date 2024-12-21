@@ -3,6 +3,7 @@ import json
 import sys
 import os
 import pprint 
+import hashlib
 
 pp = pprint.PrettyPrinter(indent=4)
 
@@ -63,8 +64,7 @@ def updateOneSystem(blog, year, month, fileContents):
 def updateBookInfo():
   global gasEndPoint
   global bookInfo
-  
-  if len(bookInfo['bookInfoPostId']==0):
+  if len(bookInfo['bookInfoPostId'])==0:
     bookInfo['bookInfoPostId']=postIdFromUrl('https://' + bookInfo['blogName'] + '.blogspot.com/' + bookInfo['year'] +'/' + bookInfo['month']+'/bookinformation.html')
 
   fileContents = {"posts": bookInfo['posts']}
@@ -79,16 +79,15 @@ def updateBookInfo():
   reply = requests.post(gasEndPoint, json = payload)
   response = json.loads(reply.text)
 
-  print("Hash Success: " , response['updated'])
+  print("Updated Hashes: " , response['updated'])
   
 
 
 def updateOnePost(blog, year, month, fileName, fileContents):
   global bookInfo
   global gasEndPoint
-  fileContentsHash = hash(fileContents)
+  fileContentsHash = hash_unicode_string(fileContents)
   fileKey = fileName.split('.')[0]
-
 
   if bookInfo['names'][fileKey]['hash'] == fileContentsHash:
     print(fileName + ' already up to date.')
@@ -105,7 +104,7 @@ def updateOnePost(blog, year, month, fileName, fileContents):
     reply = requests.post(gasEndPoint, json = payload)
     response = json.loads(reply.text)
 
-    print("Success: " , response['updated'])
+    print("Post Updated: " , response['updated'])
     bookInfo['names'][fileKey]['hash'] = fileContentsHash
     bookInfo['posts'][bookInfo['names'][fileKey]['id']]['hash'] = fileContentsHash
     updateBookInfo()
@@ -118,22 +117,6 @@ def publishOneFile(args):
   
   print (blogInfo)
   return
-
-
-
-  url = 'https://script.google.com/macros/s/'+config["deploymentId"]+'/exec'
-  payload = {
-      'post': '5777243347759718755'
-      ,'blog':'2088387750640558372'
-      ,'content':"<pre>"+contents+"</pre>"
-      , 'mode':'update-post'
-      ,'debug': 'true'
-  }
-
-  reply = requests.post(url, json = payload)
-  response = json.loads(reply.text)
-
-  print("Success: " + response.updated)
 
 
 def getBookInfo(blog, year, month):
@@ -253,7 +236,7 @@ def main():
     #now we have a scriptname ending with ".json"    
     with open(os.path.join(workingPath,"scripts",scriptName)) as f:
       script = json.load(f)
-    print("Executing ", scriptName)
+    print("Executing: ", scriptName)
     bookInfo = script['bookInfo']  
     args=script['args']
     updateBookPosts(bookInfo['blogName'], bookInfo['year'], bookInfo['month'], args)
@@ -297,7 +280,19 @@ def main():
     f.close()
     print("Successfully wrote " + scriptNameToSave)
 
-  
+def hash_unicode_string(string):
+  #Hashes a Unicode string using SHA-256/
+
+  # Encode the string to bytes using UTF-8 encoding
+  encoded_string = string.encode('utf-8') 
+
+  # Create a SHA-256 hash object
+  hash_object = hashlib.sha256(encoded_string)
+
+  # Get the hexadecimal representation of the hash
+  hex_digest = hash_object.hexdigest()
+
+  return hex_digest  
 
 if __name__=="__main__":
     main()
