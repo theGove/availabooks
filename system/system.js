@@ -1,3 +1,4 @@
+//new and improved
 function init(){
     // Set a function onscroll - this will activate if the user scrolls
     //dims the buttons when the user scrolls
