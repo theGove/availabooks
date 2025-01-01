@@ -123,7 +123,24 @@ def processOneFile(chapter, version):
     image["alt"] = caption
     changes.append({"find":"{-img-" + imageData["id"] + "-}","replace":str(imageNumber)})
 
-    # adjust the DOM 
+  # ============================= processing links =============================
+  links = soup.find_all('a')
+  for link in links:
+    if link["href"].startswith("http"):
+      # external link. Leave it alone
+      pass
+    elif link["href"].startswith("#"):
+      # in-page link. Leave it alone
+      pass
+    else:
+      # relative link. See if it needs to be processed
+      
+    
+    print("=================",link["href"],"=================")
+    
+
+
+  # ============================= adjust the DOM ============================= 
     if image.parent.name=="p":
       image.parent["style"]="text-align:center"
 
