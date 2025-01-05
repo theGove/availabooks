@@ -1,7 +1,9 @@
 {
+  "title":"A Christmas Carol",
+  "Author":"Charles Dickens",
   "build": {
-    "version": "williams",
-    "chapters": [1]
+    "version": "leech",
+    "chapters": [1,2]
   },
   "chapterLabel": "Stave",
   "versions": {

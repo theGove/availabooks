@@ -49,7 +49,6 @@ def main():
     return
 
   for key in settings["versions"]:
-    print("=========================")
     version=settings["versions"][key]
     print(version["blog"], version)
     for chapterKey in version["chapters"]:
@@ -73,7 +72,6 @@ def main():
   f = open(os.path.join(workingPath,"settings.json"), "w")
   f.write(json.dumps(settings, indent=2))
   f.close()
-  print()
   print("done.")
       
 

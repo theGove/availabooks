@@ -42,6 +42,8 @@ def processOneFile(chapter, version):
   # split markdown into array based on comments
   content=contents.replace("-->","<!--").split("<!--")  
   
+  changes=[] ## used to make a list of text changes that need to be made
+
   # handle conditionals  
   for i in range(len(content)-2, -1, -2):
     try:
@@ -79,9 +81,12 @@ def processOneFile(chapter, version):
             while not common.dictionaryContains(content[i],"endCondition",id):
               content.pop(i) # remove everything until the closing of the conditional
             content.pop(i) #remove the closing conditional
+      elif "id" in obj:
+        content[i]=f"~id:{obj['id']}~"
 
-      # other go here...
 
+      # others go here...
+  print(changes)
   htmlFile = markdown.markdown("".join(content))
   soup = BeautifulSoup(htmlFile, 'html5lib')
   sections = soup.find_all('h2')
@@ -108,12 +113,12 @@ def processOneFile(chapter, version):
   
   # ============================= processing images =============================
   images = soup.find_all('img')
-  changes=[]
   imageNumber=0
   for image in images:
     imageNumber+=1
-    #print("=================",image["alt"],"=================")
+    print("=================",image["alt"],"=================")
     imageData=json.loads(image["alt"])
+    print (imageData)
     if "caption" not in imageData:
       imageData["caption"] = True
     image["id"] = "image-" + imageData["id"]
@@ -122,6 +127,15 @@ def processOneFile(chapter, version):
     image["title"] = caption
     image["alt"] = caption
     changes.append({"find":"{-img-" + imageData["id"] + "-}","replace":str(imageNumber)})
+    # ============================= adjust the DOM for images============================= 
+    if image.parent.name=="p":
+      image.parent["style"]="text-align:center"
+
+    if imageData["caption"] == True:
+      div = soup.new_tag("div")
+      div.append(caption)
+      div["style"]="text-align:center"
+      image.insert_after(div)
 
   # ============================= processing links =============================
   links = soup.find_all('a')
@@ -136,24 +150,29 @@ def processOneFile(chapter, version):
       # relative link. See if it needs to be processed
       
     
-    print("=================",link["href"],"=================")
+      print("=================",link["href"],"=================")
     
 
 
-  # ============================= adjust the DOM ============================= 
-    if image.parent.name=="p":
-      image.parent["style"]="text-align:center"
-
-    if imageData["caption"] == True:
-      div = soup.new_tag("div")
-      div.append(caption)
-      div["style"]="text-align:center"
-      image.insert_after(div)
     
+
+
+  # ============================= processing paragraph ids =============================
+  elems = soup.find_all('p')
+  for elem in elems:
+    if elem.get_text().startswith('~id:'):
+      contents = elem.contents
+      p = soup.new_tag("p")
+      data=contents[0].split("~")
+      p["id"] = data[1].split(":")[1].split("~")[0]
+
+      contents[0].replace_with(data[2])
+      p.extend(contents)
+      elem.replace_with(p)
+
   htmlText=soup.prettify()
-
   # we're done with the dom, now processing as a text file
-
+  print("changes",changes)
   for change in changes:
    #print("replacing",change['find'],"with",change["replace"])
     htmlText = htmlText.replace(change['find'] , change["replace"])
