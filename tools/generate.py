@@ -1,5 +1,6 @@
 #this script transcodes original work (usually markdown) into the various HTML files that will be hosted on blogger
 
+import re
 import json
 import sys
 import os
@@ -116,9 +117,9 @@ def processOneFile(chapter, version):
   imageNumber=0
   for image in images:
     imageNumber+=1
-    print("=================",image["alt"],"=================")
+    #print("=================",image["alt"],"=================")
     imageData=json.loads(image["alt"])
-    print (imageData)
+    #print (imageData)
     if "caption" not in imageData:
       imageData["caption"] = True
     image["id"] = "image-" + imageData["id"]
@@ -138,6 +139,9 @@ def processOneFile(chapter, version):
       image.insert_after(div)
 
   # ============================= processing links =============================
+  # print("settings",settings['versions'])
+
+
   links = soup.find_all('a')
   for link in links:
     if link["href"].startswith("http"):
@@ -148,10 +152,16 @@ def processOneFile(chapter, version):
       pass
     else:
       # relative link. See if it needs to be processed
-      
-    
+      # Convert /version/ to version path
+      # convert 3.md to to the correct out number 
+        
       print("=================",link["href"],"=================")
-    
+      href=link['href']
+      for key, value in settings['versions'].items() :
+          print (key)
+          versionPath = "/" + value['year'] + "/" + value[month] + "/"
+          href.replace(f"/{key1}/",versionPath)
+
 
 
     
@@ -172,7 +182,7 @@ def processOneFile(chapter, version):
 
   htmlText=soup.prettify()
   # we're done with the dom, now processing as a text file
-  print("changes",changes)
+  # print("changes",changes)
   for change in changes:
    #print("replacing",change['find'],"with",change["replace"])
     htmlText = htmlText.replace(change['find'] , change["replace"])
