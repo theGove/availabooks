@@ -1,6 +1,6 @@
 {
   "title":"A Christmas Carol",
-  "Author":"Charles Dickens",
+  "author":"Charles Dickens",
   "build": {
     "version": "leech",
     "chapters": [1,2]

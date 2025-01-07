@@ -5,7 +5,6 @@ import os
 import pprint 
 import hashlib
 import common
-from bs4 import BeautifulSoup
 
 bookInfo={
   'posts':{},
@@ -23,29 +22,16 @@ systemRoot=""
 gasEndPoint = '' # this is used for contacting the google AppsScript blogger code 
 toolPath = '' # this is the path used for config.json
 
-def extract_body_from_html(html_content):
-    soup = BeautifulSoup(html_content, 'html.parser')
-    body = soup.body
-    return body.get_text(separator='\n', strip=True) if body else ''
-
 def getGasEndpoint():
   with open(os.path.join(toolPath, 'config.json')) as f:
     config = json.load(f)
   return 'https://script.google.com/macros/s/'+config["deploymentId"]+'/exec'
 
 
-def getBlogId(blogName):
-  if "blogId" in bookInfo:
-    return bookInfo["blogId"]
-  else:
-    return getBlogInfo(blogName)["blogId"]
-  
-  
 def getBlogInfo(blogName):
   url = f"https://{blogName}.blogspot.com/feeds/posts/default?max-results=0"
   reply = requests.get(url)
   blogId=reply.text.split("blog-")[1].split("<")[0]
-  bookInfo["blogId"] = blogId
   return {'blogId':blogId}
 
 def postIdFromUrl(url):
@@ -79,11 +65,8 @@ def updateOneSystem(blog, year, month, fileContents):
 def updateBookInfo():
   global gasEndPoint
   global bookInfo
-  print(bookInfo['blogName'], bookInfo['year'], bookInfo['month'])
   if len(bookInfo['bookInfoPostId'])==0:
-    url='https://' + bookInfo['blogName'] + '.blogspot.com/' + bookInfo['year'] +'/' + bookInfo['month']+'/bookinformation.html'
-    print("url", url)
-    bookInfo['bookInfoPostId']=postIdFromUrl(url)
+    bookInfo['bookInfoPostId']=postIdFromUrl('https://' + bookInfo['blogName'] + '.blogspot.com/' + bookInfo['year'] +'/' + bookInfo['month']+'/bookinformation.html')
 
   fileContents = {"posts": bookInfo['posts']}
   payload = {
@@ -96,69 +79,22 @@ def updateBookInfo():
 
   reply = requests.post(gasEndPoint, json = payload)
   response = json.loads(reply.text)
-  if "updated" in response:
-    print("Updated Hashes: " , response['updated'])
-  else:
-    print("failed Hashes: " , response)
-    sys.exit() # done.  We think we out ran the blogger api limits  
-  
-def createPost(blog, year, month, filename, fileContents):
-  global gasEndPoint
-  blogId = getBlogId(blog)
 
-  if gasEndPoint == '':
-    gasEndPoint = getGasEndpoint()   
-  print (gasEndPoint)
+  print("Updated Hashes: " , response['updated'])
   
-  payload = {
-      'mode':'create-post'
-      ,'blog':blogId
-      ,'content':fileContents
-      ,'debug': 'true'
-      ,"published":f"{year}-{month}-01T01:02:20-07:00"    
-      ,"title":filename
-  }
-
-  reply = requests.post(gasEndPoint, json = payload)
-  response = json.loads(reply.text)
-  
-  print("created Post: " , response['updated'])
-  return response['id']
 
 
 def updateOnePost(blog, year, month, fileName, fileContents):
   global bookInfo
   global gasEndPoint
   fileContentsHash = hash_unicode_string(fileContents)
-  print("fileName", fileName)
   fileKey = fileName.split('.')[0]
 
-  if fileKey in bookInfo['names'] and bookInfo['names'][fileKey]['hash'] == fileContentsHash:
+  if bookInfo['names'][fileKey]['hash'] == fileContentsHash:
     print(fileName + ' already up to date.')
   else:
     if gasEndPoint == '':
       gasEndPoint = getGasEndpoint()
-
-
-    if fileKey not in bookInfo['names']:
-      # get any new post information
-      chapters=common.getChaptersForBook(blog,year,month)
-      # print("chapters", chapters)
-      for key, entry in chapters.items():
-        # print(key, entry)
-        if entry['postId'] not in bookInfo['posts']:
-          bookInfo['posts'][entry['postId']] = {
-            'name': key,
-            'hash': ''
-          }
-          bookInfo['names'][key] = {
-            'hash': '',
-            'id': entry['postId']
-          }
-
-      
-
-
     payload = {
         'post': bookInfo['names'][fileKey]['id']
         ,'blog':getBlogInfo(blog)['blogId']
@@ -169,11 +105,7 @@ def updateOnePost(blog, year, month, fileName, fileContents):
     reply = requests.post(gasEndPoint, json = payload)
     response = json.loads(reply.text)
 
-    if "updated" in response:
-      print("Post Updated: " , response['updated'])
-    else :
-      print("Post Updated: " , response)
-      sys.exit() # done.  We think we out ran the blogger api limits  
+    print("Post Updated: " , response['updated'])
     bookInfo['names'][fileKey]['hash'] = fileContentsHash
     bookInfo['posts'][bookInfo['names'][fileKey]['id']]['hash'] = fileContentsHash
     updateBookInfo()
@@ -188,19 +120,12 @@ def publishOneFile(args):
   return
 
 
-
 def getBookInfo(blog, year, month):
   url= f"https://{blog}.blogspot.com/{year}/{month}/bookinformation.html"
   reply = requests.get(url)
-  if reply.status_code == 200:
-    jsonText=reply.text.split("<pre>")[1].split("</pre>")[0]
-    bookInfo['posts']=json.loads(jsonText)['posts']
-    bookInfo["bookInfoPostId"]=reply.text.split("id='post-body-")[1].split("'")[0] # get the post id
-  else:  
-    # file not found.  create a new one
-    bookInfo["bookInfoPostId"] = createPost(blog, year, month, "bookinformation", '<pre>{"posts": {}}</pre>')
-    bookInfo["posts"] = {}
+  jsonText=reply.text.split("<pre>")[1].split("</pre>")[0]
   
+  bookInfo['posts']=json.loads(jsonText)['posts']
   
   for key in bookInfo['posts']:
     bookInfo['names'][bookInfo['posts'][key]['name']] = {
@@ -210,18 +135,10 @@ def getBookInfo(blog, year, month):
   bookInfo['year'] = year
   bookInfo['month'] = month
   bookInfo['blogName'] = blog
+  bookInfo["bookInfoPostId"]=reply.text.split("id='post-body-")[1].split("'")[0] # get the post id
 
 def updateBlog(blog,year,month):
-  workingPath = os.getcwd()
-  print("updating:", blog, year, month, workingPath)
-  for root, dirs, files in os.walk(workingPath):
-    updateBookPosts(blog, year, month, files)
-    # for filename in files:
-    #   filePath = os.path.join(root, filename)
-    #   print("filename",filename, filename.split(".")[0])
-    #   with open(filePath, "r",encoding='utf-8') as file:
-    #       fileContents = BeautifulSoup(file.read(), 'html.parser').body.decode_contents()
-    #   updateOnePost(blog, year, month, filename, fileContents)
+  print("updating:", blog, year, month)
 
 def updatePost(blog, year, month, filename, file):
   print("updating:", blog, year, month, filename)
@@ -240,10 +157,10 @@ def updateBookPosts(blog, year, month, postNames):
     else:  
       # must be a regular post
       # print (os.path.join(workingPath,fileName))
-      filePath = os.path.join(systemRoot,"blogger",blog,year,month,fileName)
+      filePath = os.path.join(systemRoot,blog,year,month,fileName)
       if os.path.exists(filePath):
-        with open(filePath, "r",encoding='utf-8') as file:
-          fileContents = BeautifulSoup(file.read(), 'html.parser').body.decode_contents()
+        with open(filePath, "r") as file:
+          fileContents = file.read()
         updateOnePost(blog, year, month, fileName, fileContents)
       else:
         print(filePath, " does not exist.")  
@@ -266,9 +183,6 @@ def main():
   print("workingPath",workingPath)
   print("path",path)
   saveScript=False
-
-
-  
 
   # look for saving parameters and pull them out if found
   if len(args) > 2: # an instruction to save must have at least 4 args: Script name, at least one file to upload, save, and the filename to save

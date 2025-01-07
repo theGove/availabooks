@@ -1,4 +1,7 @@
 import os
+import requests
+import xmltodict
+
 def dictionaryContains(theDict, key, value):
   # returns true if dict is a dictionary and it has the specified key value pair
   if isinstance(theDict,dict):
@@ -48,3 +51,27 @@ def isBookHome(path):
     return False # penultimate folder is not a a valid year
   
   return True # passed all checks
+
+
+def getChaptersForBook(blogName, year, month):
+    #gets the list of chatpers and their postIds for a given year and month on the blog name
+  nextLink = f"https://{blogName}.blogspot.com/feeds/posts/default?max-results=500"
+  chapters={}
+  while len(nextLink)>0:
+    reply = requests.get(nextLink)
+    text = reply.text
+    feed = xmltodict.parse(text)
+    # print(feed)
+
+    for entry in feed["feed"]["entry"]:
+      published = entry["published"].split("-")
+      title = entry["title"]["#text"]
+      if int(year) == int(published[0]) and int(month) == int(published[1]):
+        chapters[title] = {"postId":entry["id"].split("-")[-1]}
+
+    nextLink=""
+    for link in feed["feed"]["link"]:
+      if link["@rel"]=="next":
+        nextLink = link["@href"]
+        break
+  return chapters
