@@ -123,9 +123,9 @@ def processOneFile(chapter, version):
   imageNumber=0
   for image in images:
     imageNumber+=1
-    print("=================",image["alt"],"=================")
+    #print("=================",image["alt"],"=================")
     imageData=json.loads(image["alt"])
-    print (imageData)
+    #print (imageData)
     if "caption" not in imageData:
       imageData["caption"] = True
     image["id"] = "image-" + imageData["id"]
@@ -145,6 +145,9 @@ def processOneFile(chapter, version):
       image.insert_after(div)
 
   # ============================= processing links =============================
+  # print("settings",settings['versions'])
+
+
   links = soup.find_all('a')
   for link in links:
     print("=================",link["href"],"=================")
@@ -273,7 +276,7 @@ def processOneFile(chapter, version):
 
   htmlText=soup.prettify()
   # we're done with the dom, now processing as a text file
-  print("changes",changes)
+  # print("changes",changes)
   for change in changes:
    #print("replacing",change['find'],"with",change["replace"])
     htmlText = htmlText.replace(change['find'] , change["replace"])
