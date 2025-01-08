@@ -1,5 +1,7 @@
 //new and improved
 function init(){
+
+    showSection(1)
     // Set a function onscroll - this will activate if the user scrolls
     //dims the buttons when the user scrolls
     window.onscroll = function() {
@@ -11,6 +13,22 @@ function init(){
             dimButtons('dim')
         }
     }
+}
+
+function scroll_to(id){
+    // Scroll to the specified element, being sure it is visible
+    console.log("scrollTo", id)
+    let element = tag(id)
+    while (element) {
+        console.log("section",element.className, element.id)
+        if (element.className === "section" && element.style.display === 'none') {
+            showSection(element.id.split('-')[1])
+            console.log("in if")
+            break
+        }
+        element = element.parentElement;
+    }
+    tag(id).scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 function tag(id){
@@ -33,7 +51,7 @@ function showSection(section){
     let sectionsToHide = []
     let sectionToShow = 1
     let currentlyShowing = 0
-    const sections = document.querySelectorAll('.section')
+    const sections = document.querySelectorAll('.chapter-section')
 
     if(section === 'all'){
         for(const elem of sections){
@@ -47,8 +65,9 @@ function showSection(section){
 
     // find the section to hide
     for(const elem of sections){
-        if(elem.style.display === 'block'){
+        if(elem.style.display !== 'none'){
             currentlyShowing = parseInt(elem.id.split('-')[1])
+            console.log("currentlyShowing", currentlyShowing)
             sectionsToHide.push(currentlyShowing)
         }
     }
@@ -69,10 +88,21 @@ function showSection(section){
 
     // prevents sectionToShow from being out of bounds
     if(sectionToShow < 1){
-        sectionToShow = 1
+        const components = window.location.pathname.split('/')
+        priorChapter = parseInt(components[components.length - 1].split('.')[0]) - 1
+        if (priorChapter < 1){
+            sectionToShow = 1
+        }else{
+            window.location.href = priorChapter + '.html'
+        }
 
     }else if(sectionToShow > sections.length){
-        sectionToShow = sections.length
+        // navigate to next chapter
+        // needs to be updated to work with TOC, for now, it will guess the chapter number
+        const components = window.location.pathname.split('/')
+        nextChapter = parseInt(components[components.length - 1].split('.')[0]) + 1
+        window.location.href = nextChapter + '.html'
+
     }
 
     for(const sectionNumber of sectionsToHide ){

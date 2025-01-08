@@ -21,8 +21,7 @@ settings={} # to hold settings for the book
 
 def processOneFile(chapter, version):
   # currently assuming all source files are markdown
- #print ("version",version)
- #print ("chapter",chapter)
+  print ("==================version:",version,"  chapter:",chapter,"=================")
  #print ("======",settings["versions"][version])
   global sourcePath
   if "out" in settings["versions"][version]["chapters"][str(chapter)]:
@@ -71,10 +70,10 @@ def processOneFile(chapter, version):
             content.pop(i)  
         else:  
           # the condition is a block condition
-          print("found a  dictionary",obj)
+          #print("found a  dictionary",obj)
           id = obj["id"]
           content.pop(i)
-          print("checkiong condition",obj["condition"], conditionals)
+          #print("checkiong condition",obj["condition"], conditionals)
           if common.intersection(obj["condition"], conditionals):
             # the condition is met.  Include the contents
             # scan to find the end of the condition
@@ -94,6 +93,9 @@ def processOneFile(chapter, version):
 
 
       # others go here...
+
+
+  # ============================= processing the html =============================      
   htmlFile = markdown.markdown("".join(content))
   soup = BeautifulSoup(htmlFile, 'html5lib')
   sections = soup.find_all('h2')
@@ -108,7 +110,7 @@ def processOneFile(chapter, version):
     sectionCounter += 1
     temp = tempFile.split(str(section))
     html.append(temp[0])
-    html.append(f'{closingTag}<div class="section" id="section-{sectionCounter}">{str(section)}')
+    html.append(f'{closingTag}<div class="chapter-section" id="section-{sectionCounter}">{str(section)}')
     closingTag = "</div>"
     tempFile=temp[1]
 
@@ -117,6 +119,9 @@ def processOneFile(chapter, version):
   if len(closingTag)>0:
     # Chapter has at least one section, need to close it
     html.append(closingTag)
+  
+  
+  soup = BeautifulSoup("".join(html), 'html5lib')
   
   # ============================= processing images =============================
   images = soup.find_all('img')
@@ -155,7 +160,18 @@ def processOneFile(chapter, version):
       # external link. Leave it alone
       pass
     elif link["href"].startswith("#"):
-      # in-page link. Leave it alone
+      # in-page link. convert to span with onclick to show part
+      id=link["href"][1:]
+      print("id",id)
+
+      span = soup.new_tag("span")
+      span['onclick'] = f'scroll_to("{id}")'
+      span["class"]="span-link"
+      span.append("".join(link.decode_contents().split("\n")))
+      link.replace_with(span)
+      
+
+
       pass
     else:
       # relative link. See if it needs to be processed
@@ -188,7 +204,7 @@ def processOneFile(chapter, version):
         # print("link to a chapter in a different version of the same book")
         thisVersion = components[0]
         components[0] = f"{settings['versions'][components[0]]['year']}/{settings['versions'][components[0]]['month']:02}"
-        # print ("components",components)  
+        #print ("components",components)  
 
         match = find_first_match(r'\[([^\]]+)\]',lastEntry)
         # print ("match",match)
@@ -202,7 +218,7 @@ def processOneFile(chapter, version):
 
         components[1] = ".html".join(lastArray)
 
-        link["href"]="/".join(components)
+        link["href"]="/" + "/".join(components)
 
       elif len(components) == 3:
         #link includes a book number, assume it is a link to a chapter in another book
@@ -224,15 +240,13 @@ def processOneFile(chapter, version):
 
         # if target book is on the same blog, make it a relative link, otherwise build an absolute  
         if bookSettings['versions'][components[1]]['blog'] == settings['versions'][version]['blog']:
-          components[0]="/" + bookSettings['versions'][components[1]]['blog']
+          components[0]=""
         else:
           components[0]=f"https://{bookSettings['versions'][components[1]]['blog']}.blogspot.com"
 
 
         # set the year and month for the link
         components[1]=f"{bookSettings['versions'][components[1]]['year']}/{bookSettings['versions'][components[1]]['month']:02}"
-
-
 
         # now adjust the last part of the link
         match = find_first_match(r'\[([^\]]+)\]',lastEntry)
@@ -241,11 +255,14 @@ def processOneFile(chapter, version):
         if not match is None:
           #we have a square bracket in the link file name.  It is a chapter link and needs to be converted from a source value to a the output value
           outChap = match
+          #print(thisVersion,str(match))
+          #print(bookSettings["versions"]["leech"])
           if "out" in bookSettings["versions"][thisVersion]["chapters"][str(match)]:
             outChap=str(bookSettings["versions"][thisVersion]["chapters"][str(match)]["out"])
 
         lastArray[0] = outChap
         components[2] = ".html".join(lastArray)
+
 
         link["href"]="/".join(components)
 

@@ -51,19 +51,23 @@ def getBlogInfo(blogName):
 def postIdFromUrl(url):
   # takes a url to a blog post and returns its post id
   reply = requests.get(url)
-  return reply.text.split("id='post-body-")[1].split("'")[0]
+  text=reply.text
+  postId = text.split("id='post-body-")[1].split("'")[0]
+  return postId
 
 
-def updateOneSystem(blog, year, month, fileContents):
+def updateOneSystem(blog, fileContents):
   global gasEndPoint
   global bookInfo
 
   if len(bookInfo['systemPostId'])==0:
-    bookInfo['systemPostId']=postIdFromUrl('https://' + bookInfo['blogName'] + '.blogspot.com/' + bookInfo['year'] +'/' + bookInfo['month']+'/system.html')
+    bookInfo['systemPostId']=postIdFromUrl('https://' + bookInfo['blogName'] + '.blogspot.com/1970/01/system.html')
 
   if gasEndPoint == '':
     gasEndPoint = getGasEndpoint()      
   
+
+  print("bookInfo['systemPostId']",bookInfo['systemPostId'])
   payload = {
       'post': bookInfo['systemPostId']
       ,'blog':getBlogInfo(bookInfo['blogName'])['blogId']
@@ -236,7 +240,7 @@ def updateBookPosts(blog, year, month, postNames):
       systemPath=os.path.join(systemRoot,"system")
       with open(os.path.join(systemPath,"system.js") , "r") as file:
         fileContents = file.read()
-      updateOneSystem(blog,year,month,fileContents)
+      updateOneSystem(blog,fileContents)
     else:  
       # must be a regular post
       # print (os.path.join(workingPath,fileName))
