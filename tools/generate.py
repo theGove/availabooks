@@ -297,6 +297,16 @@ def processOneFile(chapter, version):
   title=h1.get_text()
   h1.string=f"{settings['chapterLabel']} {outChapter}: {title}"
 
+
+  # number chapter sections
+  sectionCounter=0
+  for h2 in soup.find_all('h2'):
+      sectionCounter +=1
+      h2.clear()
+      new_content = BeautifulSoup("asdf", 'html.parser')
+      h2.append(f"{outChapter}.{sectionCounter}: {section.get_text()}")    
+
+
   htmlText=soup.prettify()
   # we're done with the dom, now processing as a text file
   # print("changes",changes)
@@ -306,6 +316,7 @@ def processOneFile(chapter, version):
 
   htmlText = htmlText.replace("{-chp-}",outChapter)
   # htmlText = htmlText.replace("{-img-1-}","1")
+
 
   f = open(htmlPath, "w", encoding='utf-8')
   f.write(htmlText)

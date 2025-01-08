@@ -5,9 +5,8 @@ function init(){
     // Set a function onscroll - this will activate if the user scrolls
     //dims the buttons when the user scrolls
     window.onscroll = function() {
-        // Set the height to check for
-        var appear = 20
-        if (window.pageYOffset >= appear) {
+        const { scrollTop, scrollHeight, clientHeight } = document.documentElement;
+        if (scrollTop < 20 || scrollTop + clientHeight >= scrollHeight) {
             dimButtons('bright')
             dimHeader('bright')
         } else {
@@ -17,9 +16,12 @@ function init(){
         hideMenu()
     }
 
-
     window.addEventListener('resize', setTopMargin);
     setTopMargin()
+    console.log("hash", window.location.hash)
+    if(window.location.hash){
+        scroll_to(window.location.hash.substring(1))
+    }
 }
 
 function setTopMargin(){
@@ -37,15 +39,13 @@ function scroll_to(id){
     // Scroll to the specified element, being sure it is visible
     console.log("scrollTo", id)
     let element = tag(id)
-    while (element) {
-        console.log("section",element.className, element.id)
-        if (element.className === "section" && element.style.display === 'none') {
-            showSection(element.id.split('-')[1])
-            console.log("in if")
-            break
-        }
+    while (!element.className.includes('chapter-section')) {
         element = element.parentElement;
     }
+
+    showSection(element.id.split('-')[1])
+    
+
     tag(id).scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
@@ -56,20 +56,20 @@ function tag(id){
 function dimButtons(brightOrDim){
     for(const button of document.querySelectorAll('.nav')){
         if(brightOrDim === 'bright'){
-            button.classList.add("dim-button")
+            button.classList.remove("dim-button")
         } else {
             // Dim the button
-            button.classList.remove("dim-button")
+            button.classList.add("dim-button")
         }
     }
 }
 function dimHeader(brightOrDim){
     for(const header of document.getElementsByTagName("header")){
         if(brightOrDim === 'bright'){
-            header.classList.add("dim-header")
+            header.classList.remove("dim-header")
         } else {
             // Dim the button
-            header.classList.remove("dim-header")
+            header.classList.add("dim-header")
         }
     }
 }
