@@ -16,6 +16,15 @@ function init(){
         hideMenu()
     }
 
+    window.addEventListener('hashchange', function() {
+        if(window.location.hash){
+            scroll_to(window.location.hash.substring(1))
+        } else {
+            showSection(1)
+        }
+        
+      });
+
     window.addEventListener('resize', setTopMargin);
     setTopMargin()
     console.log("hash", window.location.hash)
@@ -45,8 +54,10 @@ function scroll_to(id){
 
     showSection(element.id.split('-')[1])
     
-
-    tag(id).scrollIntoView({ behavior: 'smooth', block: 'start' });
+    if(id !== element.id){
+      // this is not a section, scroll to it  
+      tag(id).scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
 }
 
 function tag(id){
@@ -78,6 +89,7 @@ function showSection(section){
     let sectionsToHide = []
     let sectionToShow = 1
     let currentlyShowing = 0
+    let buttonNavigatgion = false
     const sections = document.querySelectorAll('.chapter-section')
 
     if(section === 'all'){
@@ -102,6 +114,7 @@ function showSection(section){
     // find section to show
     if(isNaN(section)){
         // section s string and should be 'next' or 'prior'
+        buttonNavigatgion = true
         if(section === 'next'){
             sectionToShow = currentlyShowing + 1
         }else{

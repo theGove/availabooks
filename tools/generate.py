@@ -301,10 +301,10 @@ def processOneFile(chapter, version):
   # number chapter sections
   sectionCounter=0
   for h2 in soup.find_all('h2'):
-      sectionCounter +=1
+      sectionCounter += 1
+      title=h2.get_text()
       h2.clear()
-      new_content = BeautifulSoup("asdf", 'html.parser')
-      h2.append(f"{outChapter}.{sectionCounter}: {section.get_text()}")    
+      h2.append(f"{outChapter}.{sectionCounter}: {title}")    
 
 
   htmlText=soup.prettify()
