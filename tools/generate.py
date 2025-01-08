@@ -98,18 +98,19 @@ def processOneFile(chapter, version):
   # ============================= processing the html =============================      
   htmlFile = markdown.markdown("".join(content))
   soup = BeautifulSoup(htmlFile, 'html5lib')
-  sections = soup.find_all('h2')
-
-  #Print the href attribute of each link
+  
   closingTag=""
   html=[]
-  sectionCounter=0
+  #comment = soup.find("h1").get_text()
   tempFile=htmlFile
-  for section in sections:
+  sectionCounter=0
+  for section in soup.find_all('h2'):
     #print("=================",section,"=================")
     sectionCounter += 1
     temp = tempFile.split(str(section))
     html.append(temp[0])
+    # if(sectionCounter==1):
+      # html.append(f"<!--{settings['chapterLabel']} {outChapter}-->")
     html.append(f'{closingTag}<div class="chapter-section" id="section-{sectionCounter}">{str(section)}')
     closingTag = "</div>"
     tempFile=temp[1]
@@ -290,6 +291,11 @@ def processOneFile(chapter, version):
       contents[0].replace_with(data[2])
       p.extend(contents)
       elem.replace_with(p)
+
+  # remove the first H1 tag as it is the title of the chapter and will be placed in the blogger title 
+  h1=soup.find("h1")
+  title=h1.get_text()
+  h1.string=f"{settings['chapterLabel']} {outChapter}: {title}"
 
   htmlText=soup.prettify()
   # we're done with the dom, now processing as a text file

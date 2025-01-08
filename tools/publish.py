@@ -130,7 +130,7 @@ def createPost(blog, year, month, filename, fileContents):
   return response['id']
 
 
-def updateOnePost(blog, year, month, fileName, fileContents):
+def updateOnePost(blog, year, month, fileName, fileContents, title):
   global bookInfo
   global gasEndPoint
   fileContentsHash = hash_unicode_string(fileContents)
@@ -161,13 +161,12 @@ def updateOnePost(blog, year, month, fileName, fileContents):
           }
 
       
-
-
     payload = {
         'post': bookInfo['names'][fileKey]['id']
         ,'blog':getBlogInfo(blog)['blogId']
+        ,'title':title
         ,'content':fileContents
-        , 'mode':'update-post'
+        ,'mode':'update-post'
         ,'debug': 'true'
     }
     reply = requests.post(gasEndPoint, json = payload)
@@ -247,8 +246,12 @@ def updateBookPosts(blog, year, month, postNames):
       filePath = os.path.join(systemRoot,"blogger",blog,year,month,fileName)
       if os.path.exists(filePath):
         with open(filePath, "r",encoding='utf-8') as file:
-          fileContents = BeautifulSoup(file.read(), 'html.parser').body.decode_contents()
-        updateOnePost(blog, year, month, fileName, fileContents)
+          soup=BeautifulSoup(file.read(), 'html.parser')
+          h1=soup.find("h1")
+          title = h1.get_text()
+          h1.decompose()
+          fileContents = soup.body.decode_contents()
+        updateOnePost(blog, year, month, fileName, fileContents, title)
       else:
         print(filePath, " does not exist.")  
 
