@@ -1,6 +1,8 @@
 {
-  "title":"A Christmas Carol",
-  "author":"Charles Dickens",
+  "bookInfo":{
+    "title":"A Christmas Carol",
+    "authors":["Charles Dickens"]
+  },
   "chapterLabel": "Stave",
   "build": {
     "version": "leech",

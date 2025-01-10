@@ -1,6 +1,8 @@
 {
-  "title": "Oliver Twist",
-  "author": "Charles Dickens",
+  "bookInfo":{
+    "title": "Oliver Twist",
+    "authors":["Charles Dickens"]
+  },
   "build": {
     "version": "only",
     "chapters": [

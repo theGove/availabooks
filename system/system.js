@@ -1,19 +1,20 @@
 //new and improved
 function init(){
-
-    showSection(1)
+    getToc() 
+    
     // Set a function onscroll - this will activate if the user scrolls
     //dims the buttons when the user scrolls
     window.onscroll = function() {
         const { scrollTop, scrollHeight, clientHeight } = document.documentElement;
-        if (scrollTop < 20 || scrollTop + clientHeight >= scrollHeight) {
+        //document.documentElement.scrollTop+document.documentElement.clientHeight,document.documentElement.scrollHeight
+        if (scrollTop < 20 || Math.abs((scrollTop + clientHeight)-scrollHeight)<5) {
             dimButtons('bright')
             dimHeader('bright')
         } else {
             dimButtons('dim')
             dimHeader('dim')
         }
-        hideMenu()
+        //hideMenu()
     }
 
     window.addEventListener('hashchange', function() {
@@ -30,6 +31,8 @@ function init(){
     console.log("hash", window.location.hash)
     if(window.location.hash){
         scroll_to(window.location.hash.substring(1))
+    }else{
+        showSection(1)
     }
 }
 
@@ -39,12 +42,12 @@ function setTopMargin(){
     for(section of document.querySelectorAll('.chapter-section')){
         section.style.marginTop = (margin * 1.1) + 'px'
     }
-    tag("menu").style.marginTop = margin + 'px'
-    console.log("margin", margin + 'px')
+    // tag("menu").style.marginTop = margin + 'px'
+    // console.log("margin", margin + 'px')
 
 }
 
-function scroll_to(id){
+function scroll_to(id, recordHash=true){
     // Scroll to the specified element, being sure it is visible
     console.log("scrollTo", id)
     let element = tag(id)
@@ -52,12 +55,17 @@ function scroll_to(id){
         element = element.parentElement;
     }
 
-    showSection(element.id.split('-')[1])
+    showSection(element.id.split('-')[1],false)
     
     if(id !== element.id){
       // this is not a section, scroll to it  
       tag(id).scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
+
+    if(recordHash){
+        window.location.hash = '#' + id
+    }
+
 }
 
 function tag(id){
@@ -84,13 +92,15 @@ function dimHeader(brightOrDim){
         }
     }
 }
-function showSection(section){
+function showSection(section, recordHash=true){
     // section can be a number or 'next' or 'prior' or 'all'
     let sectionsToHide = []
     let sectionToShow = 1
     let currentlyShowing = 0
     let buttonNavigatgion = false
     const sections = document.querySelectorAll('.chapter-section')
+
+    if(sections.length === 0){return}
 
     if(section === 'all'){
         for(const elem of sections){
@@ -158,7 +168,9 @@ function showSection(section){
         window.scrollTo(0,0)
     }else{
         window.scrollTo(0,25)
-        window.location.hash = 'section-' + sectionToShow
+        if(recordHash){
+          window.location.hash = 'section-' + sectionToShow
+        }
     }
     
 }
@@ -184,21 +196,81 @@ function showMenu(){
         tag('menu').style.display = 'block'
         menuWidth=tag('menu').offsetWidth
     }   
-
-    console.log("menuWidth",menuWidth)
-    if(tag("menu-button").innerHTML === "close"){
-        tag("menu-button").innerHTML="menu"
-        tag('menu').style.left= `-${menuWidth+10}px`
-    }else{
-        tag("menu-button").innerHTML="close"
-        tag('menu').style.left= '0'
-    }    
+    tag('menu').style.left= '0'
+    // console.log("menuWidth",menuWidth)
+    // if(tag("menu-button").innerHTML === "close"){
+    //     tag("menu-button").innerHTML="menu"
+    //     tag('menu').style.left= `-${menuWidth+10}px`
+    // }else{
+    //     tag("menu-button").innerHTML="close"
+    //     tag('menu').style.left= '0'
+    // }    
     
 }
 
 function hideMenu(){
     let menuWidth=tag('menu').offsetWidth
-    tag("menu-button").innerHTML="menu"
-    tag('menu').style.left= `-${menuWidth+10}px`
-    
+    tag('menu').style.left= `-${menuWidth+10}px`    
+}
+
+async function getToc(){
+  let url=window.location  
+  path = url.pathname.split("/")
+  path.pop()
+  path.push("toc.html")
+  path.unshift(url.origin)
+  url=path.join("/")
+  console.log ("url", url)
+
+
+  try {
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`Response status: ${response.status}`);
+    }
+
+    const text = await response.text();
+    const toc=JSON.parse(text.split("<!--postBegin-->")[1].split("<!--postEnd-->")[0])
+    console.log(toc)
+    const  html=[]
+    for(const chapter of toc.chapters){
+
+        if(chapter.children){
+            html.push("<details>")
+            getChaptSections(chapter, html)
+            html.push("</details>")
+        }else{                
+            html.push(chapter.text)
+        }        
+    }
+    tag("menu-content").innerHTML=html.join("\n")
+
+
+   
+
+
+  } catch (error) {
+    console.error(error.message);
+  }
+
+
+}
+
+function getChaptSections(obj, html) { 
+    html.push("<summary>")
+    html.push(obj.text)
+    html.push("</summary>")
+    for(const child of obj.children){
+        if(child.children){
+            html.push("<details>")
+            getChaptSections(child, html)
+            html.push("</details>")
+        }else{                
+            html.push("<div>")
+            html.push(child.text)
+            html.push("</div>")
+        }
+
+    }
+
 }

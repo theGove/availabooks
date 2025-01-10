@@ -317,7 +317,9 @@ def processOneFile(chapter, version):
   htmlText = htmlText.replace("{-chp-}",outChapter)
   # htmlText = htmlText.replace("{-img-1-}","1")
 
-
+  bookNumber= os.getcwd().split(os.path.sep).pop()
+  
+  htmlText = '<!--{"bookNumber":' + bookNumber+ '}-->\n'  + htmlText
   f = open(htmlPath, "w", encoding='utf-8')
   f.write(htmlText)
   f.close()    
@@ -343,9 +345,10 @@ def main():
   workingPath = os.getcwd()
   toolPath = path
   
- #print("workingPath",workingPath)
- #print("bloggerPath",bloggerPath)
- #print("toolPath",toolPath)
+  #print("workingPath",workingPath)
+  #print("bloggerPath",bloggerPath)
+  print("sourcePath",sourcePath)
+  #print("toolPath",toolPath)
   try:
     with open(os.path.join(workingPath,"settings.json") , "r") as f:
       settings = json.load(f)
