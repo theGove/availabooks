@@ -88,8 +88,16 @@ def extract_headings_hierarchy(html_content):
     for heading in soup.find_all(['h1', 'h2', 'h3', 'h4', 'h5', 'h6']):
         print("heading",heading.get_text(strip=True))
         level = int(heading.name[1])
-        heading_text = heading.get_text(strip=True)
-        heading_dict = {'text': heading_text, 'children': []}
+
+        if heading.name == "h1": # h1 are chapter names and treated differently
+          heading_text = heading.get_text(strip=True).replace(":",chr(30),1).split(chr(30))[1].lstrip()
+          heading_id=0
+        else:  
+          spans = heading.find_all("span")
+          heading_text = spans[1].get_text(strip=True)
+          heading_id = spans[0].get_text(strip=True).replace(":","").replace(".","-")
+
+        heading_dict = {'text': heading_text,'id': heading_id}
 
         if level == 1:
             hierarchy.append(heading_dict)
@@ -97,7 +105,10 @@ def extract_headings_hierarchy(html_content):
         else:
             parent = current_level[level - 1]
             if parent:
-                parent['children'].append(heading_dict)
+              if "sections" not in parent:
+                parent['sections']=[]
+              parent['sections'].append(heading_dict)
+
             current_level[level] = heading_dict
 
         # Reset lower levels
@@ -122,7 +133,9 @@ def buildToc(blogName, year, month):
     with open(f"{i}.html", "r",encoding='utf-8') as f:
       html_content = f.read()
       bookNumber = json.loads(html_content.split("<!--")[1].split("-->")[0])['bookNumber']
-      toc.append(extract_headings_hierarchy(html_content)[0])
+      chapterToc=extract_headings_hierarchy(html_content)[0]
+      chapterToc["id"] = str(i)
+      toc.append(chapterToc)
   
   
   path=os.getcwd().split("blogger")[0]
@@ -130,12 +143,7 @@ def buildToc(blogName, year, month):
   with open(os.path.join(path,"source",str(bookNumber),"settings.json") , "r") as f:
     bookSettings = json.load(f)
 
-  
   toc={"bookInfo":bookSettings["bookInfo"],"chapters":toc}
-  textJson = json.dumps(toc)
-  textJson = textJson.replace(', "children": []','')
-  print("textJson",textJson)
-  toc= json.loads(textJson)
   updateOnePost(blogName, year, month, json.dumps(toc, indent=4))
   print ("done with book #", bookNumber)
   

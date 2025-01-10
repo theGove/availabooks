@@ -50,6 +50,7 @@ function setTopMargin(){
 function scroll_to(id, recordHash=true){
     // Scroll to the specified element, being sure it is visible
     console.log("scrollTo", id)
+    hideMenu()
     let element = tag(id)
     while (!element.className.includes('chapter-section')) {
         element = element.parentElement;
@@ -235,7 +236,7 @@ async function getToc(){
     const  html=[]
     for(const chapter of toc.chapters){
 
-        if(chapter.children){
+        if(chapter.sections){
             html.push("<details>")
             getChaptSections(chapter, html)
             html.push("</details>")
@@ -243,7 +244,7 @@ async function getToc(){
             html.push(chapter.text)
         }        
     }
-    tag("menu-content").innerHTML=html.join("\n")
+    tag("toc").innerHTML=html.join("\n")
 
 
    
@@ -258,19 +259,38 @@ async function getToc(){
 
 function getChaptSections(obj, html) { 
     html.push("<summary>")
-    html.push(obj.text)
+    html.push(`<span>${obj.id.split("-").join(".")}: </span><span><a href="${newPathName(window.location.pathname,obj.id)}#heading-${obj.id}">${obj.text}</a></span>`)
     html.push("</summary>")
-    for(const child of obj.children){
-        if(child.children){
-            html.push("<details>")
+    for(const child of obj.sections){
+        if(child.sections){
+            html.push('<div class="toc-section-container"><details>')
             getChaptSections(child, html)
-            html.push("</details>")
+            html.push("</details></div>")
         }else{                
-            html.push("<div>")
-            html.push(child.text)
+            html.push('<div class="toc-text-container">')
+            html.push(`<a href="${newPathName(window.location.pathname,child.id)}#heading-${child.id}"><span>${child.id.split("-").join(".")}: </span><span>${child.text}</a></span>`)
             html.push("</div>")
         }
 
     }
+    function newPathName(path, id){
+        const pathArray=path.split("/")        
+        fileArray = pathArray[pathArray.length-1].split(".")
+        currentChapter=fileArray[0]
+        linkChapter = id.split("-").shift()
+        console.log("currentChapter",currentChapter,"linkChapter",linkChapter )
+        if(linkChapter===currentChapter){
+            // link to a place on the same page
+            return ""
+        }else{
+            //link to a place on a different page
+            fileArray[0] = linkChapter
+            pathArray[pathArray.length-1] = fileArray.join(".")
+            return pathArray.join("/")
+        }
 
+        
+    }
 }
+
+

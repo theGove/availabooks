@@ -295,16 +295,39 @@ def processOneFile(chapter, version):
   # remove the first H1 tag as it is the title of the chapter and will be placed in the blogger title 
   h1=soup.find("h1")
   title=h1.get_text()
+  h1["id"]=f"heading-{outChapter}"
   h1.string=f"{settings['chapterLabel']} {outChapter}: {title}"
 
 
   # number chapter sections
   sectionCounter=0
-  for h2 in soup.find_all('h2'):
-      sectionCounter += 1
-      title=h2.get_text()
-      h2.clear()
-      h2.append(f"{outChapter}.{sectionCounter}: {title}")    
+  lastLevel=7 # guarantee that 
+  levelCounter=[None,outChapter,0,0,0,0,0]
+    
+  for h in soup.find_all(['h2', 'h3', 'h4', 'h5', 'h6']):
+    level=int(h.name[1:])
+    if level < lastLevel: # we are back to a higher level
+      for i in (level+1,6):
+        print("level",level, i)            
+        levelCounter[i]=0 # reset levels for everything after current level
+    levelCounter[level] += 1    
+    lastLevel = level
+    print ( level, "-->",levelCounter[2], levelCounter[3], levelCounter[4], levelCounter[5])
+    title=h.get_text()
+    id=outChapter
+    for i in range(2,level+1):
+      id = f"{id}-{levelCounter[i]}"
+    h.clear()
+    print("id",id)
+    h["id"]=f"heading-{id}"
+    span = soup.new_tag("span", class_=f"head-num num-{level}")
+    span.string = f'{id.replace("-",".")}:' 
+    h.append(span)
+
+
+    span = soup.new_tag("span", class_=f"head-text")
+    span.string = title 
+    h.append(span)
 
 
   htmlText=soup.prettify()
