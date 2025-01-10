@@ -259,7 +259,7 @@ async function getToc(){
 
 function getChaptSections(obj, html) { 
     html.push("<summary>")
-    html.push(`<span>${obj.id.split("-").join(".")}: </span><span><a href="${newPathName(window.location.pathname,obj.id)}#heading-${obj.id}">${obj.text}</a></span>`)
+    html.push(`<span>${lastId(obj.id)}: </span><span><a href="${newPathName(window.location.pathname,obj.id)}#heading-${obj.id}">${obj.text}</a></span>`)
     html.push("</summary>")
     for(const child of obj.sections){
         if(child.sections){
@@ -268,17 +268,21 @@ function getChaptSections(obj, html) {
             html.push("</details></div>")
         }else{                
             html.push('<div class="toc-text-container">')
-            html.push(`<a href="${newPathName(window.location.pathname,child.id)}#heading-${child.id}"><span>${child.id.split("-").join(".")}: </span><span>${child.text}</a></span>`)
+            html.push(`<a href="${newPathName(window.location.pathname,child.id)}#heading-${child.id}"><span>${lastId(child.id)}: </span><span>${child.text}</a></span>`)
             html.push("</div>")
         }
 
     }
+    function lastId(id){
+        const idArray=id.split("-")
+        return idArray[idArray.length-1]
+    }
     function newPathName(path, id){
         const pathArray=path.split("/")        
-        fileArray = pathArray[pathArray.length-1].split(".")
-        currentChapter=fileArray[0]
-        linkChapter = id.split("-").shift()
-        console.log("currentChapter",currentChapter,"linkChapter",linkChapter )
+        const fileArray = pathArray[pathArray.length-1].split(".")
+        const currentChapter=fileArray[0]
+        const linkChapter = id.split("-").shift()
+        
         if(linkChapter===currentChapter){
             // link to a place on the same page
             return ""
