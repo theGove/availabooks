@@ -296,7 +296,7 @@ def processOneFile(chapter, version):
   h1=soup.find("h1")
   title=h1.get_text()
   h1["id"]=f"heading-{outChapter}"
-  h1.string=f"{settings['chapterLabel']} {outChapter}: {title}"
+  h1.string=f"{settings['bookInfo']['chapterLabel']} {outChapter}: {title}"
 
 
   # number chapter sections

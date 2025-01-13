@@ -143,11 +143,37 @@ def buildToc(blogName, year, month):
   with open(os.path.join(path,"source",str(bookNumber),"settings.json") , "r") as f:
     bookSettings = json.load(f)
 
-  toc={"bookInfo":bookSettings["bookInfo"],"chapters":toc}
-  updateOnePost(blogName, year, month, json.dumps(toc, indent=4))
+  
+  html=['<div style="display:none" id="toc-json">']
+  html.append(json.dumps({"bookInfo":bookSettings["bookInfo"],"chapters":toc}, indent=4))
+  html.append("</div     >")# the spaces are to make it different from any div that might end up in the toc
+
+  # build the HTML version of the title page
+  html.append(f'<div class="book-title">{bookSettings["bookInfo"]["title"]}</div>')
+  html.append(f'<div class="book-author">{joinWithCommasAnd(bookSettings["bookInfo"]["authors"])}</div>')
+  html.append(f'<div class="book-toc">')
+  html.append(f'<div class="book-chapters">')
+  print(year, month)
+  for chapter in toc:
+    html.append(f'<div class="book-chapter"><a href="/{year}/{month}/{chapter["id"]}.html">{bookSettings["bookInfo"]["chapterLabel"]} {chapter["id"]}: {chapter["text"]}</a></div>')
+  
+  html.append(f'</div>')
+  html.append(f'</div>')
+
+
+  updateOnePost(blogName, year, month, "\n".join(html))
   print ("done with book #", bookNumber)
   
-  
+def joinWithCommasAnd(lst):
+    if not lst:
+        return ""
+    elif len(lst) == 1:
+        return lst[0]
+    elif len(lst) == 2:
+        return f"{lst[0]} and {lst[1]}"
+    else:
+        return ", ".join(lst[:-1]) + f", and {lst[-1]}"
+      
 def main(): 
   # If no params are passed, we will look to see if we are in a 
   # folder numbered 01-12 with a parent that is a four digit year greater 

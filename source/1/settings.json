@@ -1,12 +1,17 @@
 {
-  "bookInfo":{
-    "title":"A Christmas Carol",
-    "authors":["Charles Dickens"]
+  "bookInfo": {
+    "title": "A Christmas Carol",
+    "authors": [
+      "Charles Dickens"
+    ],
+    "chapterLabel": "Stave"
   },
-  "chapterLabel": "Stave",
   "build": {
     "version": "leech",
-    "chapters": [1,2]
+    "chapters": [
+      1,
+      2
+    ]
   },
   "versions": {
     "leech": {
@@ -28,6 +33,10 @@
         },
         "5": {
           "postId": "7515201814429503664"
+        },
+        "6": {
+          "postId": "5732237533632377488",
+          "chapterLabel":"Appendix"
         }
       },
       "blog": "book1002",

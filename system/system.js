@@ -4,18 +4,7 @@ function init(){
     
     // Set a function onscroll - this will activate if the user scrolls
     //dims the buttons when the user scrolls
-    window.onscroll = function() {
-        const { scrollTop, scrollHeight, clientHeight } = document.documentElement;
-        //document.documentElement.scrollTop+document.documentElement.clientHeight,document.documentElement.scrollHeight
-        if (scrollTop < 20 || Math.abs((scrollTop + clientHeight)-scrollHeight)<5) {
-            dimButtons('bright')
-            dimHeader('bright')
-        } else {
-            dimButtons('dim')
-            dimHeader('dim')
-        }
-        //hideMenu()
-    }
+    window.onscroll = setDimness
 
     window.addEventListener('hashchange', function() {
         if(window.location.hash){
@@ -35,6 +24,19 @@ function init(){
         showSection(1)
     }
 }
+function setDimness() {
+    const { scrollTop, scrollHeight, clientHeight } = document.documentElement;
+    //document.documentElement.scrollTop+document.documentElement.clientHeight,document.documentElement.scrollHeight
+    if (scrollTop < 20 || Math.abs((scrollTop + clientHeight)-scrollHeight)<5) {
+        dimButtons('bright')
+        dimHeader('bright')
+    } else {
+        dimButtons('dim')
+        dimHeader('dim')
+    }
+    //hideMenu()
+}
+
 
 function setTopMargin(){
     const header = document.getElementsByTagName("header")[0]
@@ -178,12 +180,19 @@ function showSection(section, recordHash=true){
 
 function navigate(direction){
     // used for the navigation buttons. direction is 'next' or 'prior'
+    targetNode = tag(direction + "-button")
+    const parentNode = targetNode.parentNode
+
+    const clonedElement = targetNode.cloneNode(true);
+    targetNode.remove()
+
     if(direction === 'next'){
         showSection('next')
     } else{
         // direction === 'prior'
         showSection('prior')
     }
+    parentNode.appendChild(clonedElement)
     
 }
 
@@ -224,20 +233,25 @@ async function getToc(){
   console.log ("url", url)
 
 
-  try {
+  //try {
     const response = await fetch(url);
     if (!response.ok) {
       throw new Error(`Response status: ${response.status}`);
     }
 
     const text = await response.text();
-    const toc=JSON.parse(text.split("<!--postBegin-->")[1].split("<!--postEnd-->")[0])
-    console.log(toc)
+    const toc=JSON.parse(text.split('<div style="display:none" id="toc-json">')[1].split("</div     >")[0])
+    tag("book-title").getElementsByTagName("a")[0].replaceChildren(toc.bookInfo.title)
+    
     const  html=[]
     for(const chapter of toc.chapters){
-
         if(chapter.sections){
-            html.push("<details>")
+            let chapterNumber = window.location.pathname.split("/").pop().split(".")[0]
+            if(chapterNumber === chapter.id){
+                html.push("<details open>")
+            }else{
+                html.push("<details>")
+            }
             getChaptSections(chapter, html)
             html.push("</details>")
         }else{                
@@ -250,9 +264,9 @@ async function getToc(){
    
 
 
-  } catch (error) {
-    console.error(error.message);
-  }
+//   } catch (error) {
+//     console.error(error.message);
+//   }
 
 
 }
