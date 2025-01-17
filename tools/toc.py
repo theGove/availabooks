@@ -136,7 +136,7 @@ def buildToc(blogName, year, month):
       chapterToc=extract_headings_hierarchy(html_content)[0]
       chapterToc["id"] = str(i)
       toc.append(chapterToc)
-  
+  toc[-1]["end"] = True
   
   path=os.getcwd().split("blogger")[0]
   print("path",path)
@@ -154,8 +154,10 @@ def buildToc(blogName, year, month):
   html.append(f'<div class="book-toc">')
   html.append(f'<div class="book-chapters">')
   print(year, month)
+  
   for chapter in toc:
     html.append(f'<div class="book-chapter"><a href="/{year}/{month}/{chapter["id"]}.html">{bookSettings["bookInfo"]["chapterLabel"]} {chapter["id"]}: {chapter["text"]}</a></div>')
+  
   
   html.append(f'</div>')
   html.append(f'</div>')

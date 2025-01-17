@@ -96,7 +96,11 @@ def processOneFile(chapter, version):
 
 
   # ============================= processing the html =============================      
-  htmlFile = markdown.markdown("".join(content))
+  bookNumber= os.getcwd().split(os.path.sep).pop()
+  bookend = "false"
+  if len(settings["versions"][version]["chapters"])==int(chapter):
+    bookend= "true"
+  htmlFile =    '<div id="page-data" data-bookend="' + bookend + '">{"bookNumber":' + bookNumber + ',"bookend":' + bookend + '}</div>\n'  + markdown.markdown("".join(content))
   soup = BeautifulSoup(htmlFile, 'html5lib')
   
   closingTag=""
@@ -340,9 +344,7 @@ def processOneFile(chapter, version):
   htmlText = htmlText.replace("{-chp-}",outChapter)
   # htmlText = htmlText.replace("{-img-1-}","1")
 
-  bookNumber= os.getcwd().split(os.path.sep).pop()
   
-  htmlText = '<!--{"bookNumber":' + bookNumber+ '}-->\n'  + htmlText
   f = open(htmlPath, "w", encoding='utf-8')
   f.write(htmlText)
   f.close()    

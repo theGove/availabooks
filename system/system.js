@@ -1,6 +1,10 @@
 //new and improved
+const pageData={}
+let  variables={}
 function init(){
+    setVariables()
     getToc() 
+    configureBook()
     
     // Set a function onscroll - this will activate if the user scrolls
     //dims the buttons when the user scrolls
@@ -24,6 +28,31 @@ function init(){
         showSection(1)
     }
 }
+
+function configureBook(){
+    document.body.style.setProperty('--font-zoom', variables.fontZoom);
+}
+
+function setVariables(){
+    //read the variables from local storage.  if not present create them and save to local storage
+    const pathArray = window.location.pathname.split("/")
+    variables.year=pathArray[1]
+    variables.month=pathArray[2]
+
+    const storedVariables = localStorage.getItem("book-settings")
+    if(storedVariables===null){
+        // storedVariables do not yet exits
+        variables.fontZoom=1
+        localStorage.setItem(`book-settings`,JSON.stringify(variables))
+    }else{
+        variables=JSON.parse(storedVariables)
+    }
+
+    console.log("variables",variables)
+    console.log("storedVariables",storedVariables)
+  
+}
+
 function setDimness() {
     const { scrollTop, scrollHeight, clientHeight } = document.documentElement;
     //document.documentElement.scrollTop+document.documentElement.clientHeight,document.documentElement.scrollHeight
@@ -42,7 +71,7 @@ function setTopMargin(){
     const header = document.getElementsByTagName("header")[0]
     const margin = header.offsetHeight 
     for(section of document.querySelectorAll('.chapter-section')){
-        section.style.marginTop = (margin * 1.1) + 'px'
+        section.style.marginTop =  `calc((${margin * 1.1}px  * var(--font-zoom))`
     }
     // tag("menu").style.marginTop = margin + 'px'
     // console.log("margin", margin + 'px')
@@ -54,8 +83,10 @@ function scroll_to(id, recordHash=true){
     console.log("scrollTo", id)
     hideMenu()
     let element = tag(id)
+    if(!element){return}
     while (!element.className.includes('chapter-section')) {
         element = element.parentElement;
+        if(!element){return}
     }
 
     showSection(element.id.split('-')[1],false)
@@ -105,7 +136,7 @@ function showSection(section, recordHash=true){
 
     if(sections.length === 0){return}
 
-    if(section === 'all'){
+    if(section === 'all'){  // not currently used or tested
         for(const elem of sections){
             elem.style.display = 'block'
         }
@@ -143,10 +174,11 @@ function showSection(section, recordHash=true){
     if (isNaN(sectionToShow)){return}
 
     if(sectionToShow < 1){
+
         const components = window.location.pathname.split('/')
         priorChapter = parseInt(components[components.length - 1].split('.')[0]) - 1
         if (priorChapter < 1){
-            sectionToShow = 1
+            window.location.href = 'toc.html'
         }else{
             window.location.href = priorChapter + '.html'
             return
@@ -155,9 +187,19 @@ function showSection(section, recordHash=true){
     }else if(sectionToShow > sections.length){
         // navigate to next chapter
         // needs to be updated to work with TOC, for now, it will guess the chapter number
-        const components = window.location.pathname.split('/')
-        nextChapter = parseInt(components[components.length - 1].split('.')[0]) + 1
-        window.location.href = nextChapter + '.html'
+
+        
+        if(!pageData.bookend){
+            pageData.bookend = tag("page-data").dataset.bookend
+            console.log('tag("page-data").dataset.bookend',tag("page-data").dataset.bookend)
+        }
+        if(pageData.bookend==="true"){
+            message("You have reached the end of this book.  Thank you for using Availabooks.","Book Over",[], 8)
+        }else{
+            const components = window.location.pathname.split('/')
+            nextChapter = parseInt(components[components.length - 1].split('.')[0]) + 1
+            window.location.href = nextChapter + '.html'
+        }
         return 
     }
 
@@ -220,29 +262,27 @@ function showMenu(){
 
 function hideMenu(){
     let menuWidth=tag('menu').offsetWidth
-    tag('menu').style.left= `-${menuWidth+10}px`    
+    tag('menu').style.left= `-${menuWidth+10}px`  
+      
 }
 
 async function getToc(){
-  let url=window.location  
-  path = url.pathname.split("/")
-  path.pop()
-  path.push("toc.html")
-  path.unshift(url.origin)
-  url=path.join("/")
-  console.log ("url", url)
+    let url=window.location  
+    path = url.pathname.split("/")
+    path.pop()
+    path.push("toc.html")
+    path.unshift(url.origin)
+    url=path.join("/")
 
-
-  //try {
     const response = await fetch(url);
     if (!response.ok) {
-      throw new Error(`Response status: ${response.status}`);
+        throw new Error(`Response status: ${response.status}`);
     }
 
     const text = await response.text();
     const toc=JSON.parse(text.split('<div style="display:none" id="toc-json">')[1].split("</div     >")[0])
     tag("book-title").getElementsByTagName("a")[0].replaceChildren(toc.bookInfo.title)
-    
+
     const  html=[]
     for(const chapter of toc.chapters){
         if(chapter.sections){
@@ -259,15 +299,6 @@ async function getToc(){
         }        
     }
     tag("toc").innerHTML=html.join("\n")
-
-
-   
-
-
-//   } catch (error) {
-//     console.error(error.message);
-//   }
-
 
 }
 
@@ -312,3 +343,82 @@ function getChaptSections(obj, html) {
 }
 
 
+function showHighlight(){
+
+    document.getElementsByTagName("p")[0].replaceChildren(document.getElementsByTagName("p")[0].innerHTML)
+
+}
+function closeMessage(evt){
+    if(evt){
+        let elem = evt.target
+        while(elem.className !== "msg-dialog"){
+            elem=elem.parentNode
+        }
+        elem.remove()
+    }
+}
+
+function message(messageHtml="An error occurred.", titleText="System Message", callbacks=[{text:"OK",fn:closeMessage}], secondsUntilClose){
+    // Shows a message in the message galley.  
+    const dialog = document.createElement("div");
+    dialog.className="msg-dialog"
+    const titleBar = document.createElement("div");
+    titleBar.className="msg-title"
+    menuButton=document.createElement("div")
+    menuButton.className = "msg-close"
+    const close=document.createElement("span")
+    close.className = "material-symbols-outlined"
+    close.textContent="close"
+    close.style.fontSize="calc(15px  * var(--font-zoom))"
+    menuButton.appendChild(close)
+    menuButton.addEventListener("click",closeMessage)
+    dialog.appendChild(menuButton)
+    titleBar.textContent = titleText
+
+
+    const messagePane = document.createElement("div");
+    messagePane.className="msg-message"
+    messagePane.innerHTML = messageHtml
+
+
+    dialog.appendChild(titleBar)
+    dialog.appendChild(messagePane)
+
+    if(callbacks.length>0){
+        const buttonBar = document.createElement("div");
+        buttonBar.className="msg-button-bar"
+        for(const callback of callbacks){
+            const button = document.createElement("button");
+            button.textContent = callback.text
+            button.addEventListener("click",callback.fn)
+            buttonBar.appendChild(button)
+        }
+        dialog.appendChild(buttonBar)
+    }
+
+    if(secondsUntilClose){
+        const timeoutId = setTimeout(function(){ closeMessage({target:dialog}); }, secondsUntilClose*1000);
+        dialog.addEventListener("mousemove",function(){clearTimeout(timeoutId)})
+    }
+
+    tag("msg-galley").appendChild(dialog);  
+
+
+}
+
+
+function fontSize(adjustment){
+    //adjust the font size for the post
+
+    //const zoom = parseFloat(window.getComputedStyle(document.body).getPropertyValue('--font-zoom'))
+    if(!adjustment){
+        variables.fontZoom = 1
+        //document.body.style.setProperty('--font-zoom', 1);
+    }else{
+        variables.fontZoom = Math.round((variables.fontZoom+adjustment)*10)/10
+        //document.body.style.setProperty('--font-zoom', zoom + adjustment);
+    }
+    document.body.style.setProperty('--font-zoom', variables.fontZoom);
+    localStorage.setItem(`book-settings`,JSON.stringify(variables))
+
+}
